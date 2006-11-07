@@ -13,6 +13,7 @@ uses
 begin
   Application.Initialize;
   Application.CreateForm(TMainForm, MainForm);
-  Application.CreateForm(TFrm_Info, Frm_Info);
+  Application.ShowMainForm := False;
+//  MainForm.FormActivate(MainForm);
   Application.Run;
 end.

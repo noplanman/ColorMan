@@ -624,7 +624,7 @@ object MainForm: TMainForm
     Left = 15
     Top = 66
     object popupTrayIconShowHide: TMenuItem
-      Caption = 'Show / Hide'
+      Caption = 'Hide'
       Hint = 'Show / Hide'
       OnClick = popupTrayIconShowHideClick
     end

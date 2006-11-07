@@ -91,29 +91,32 @@ uses Math, StrUtils, ini, globalDefinitions, functions, info;
 
 {$R *.dfm}
 
-procedure delay(msecs:Integer);
+procedure delay(msecs:Cardinal);
 var
-  FirstTickCount:Longint;
+  FirstTickCount:Cardinal;
 begin
   FirstTickCount := GetTickCount;
   repeat
     Application.ProcessMessages; {allowing access to other controls, etc.}
-  until ((GetTickCount-FirstTickCount) >= Longint(msecs));
+  until ((GetTickCount-FirstTickCount) >= msecs);
 end;
 
 procedure TMainForm.loadSettings;
 begin
   // get filepath of file
-  filePath := IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0)));
+  filePath := ExtractFilePath(ParamStr(0));
   if FileExists(filePath + iniFileName) then
   begin
     // StartMinimized
-    if ini.getInteger('Settings','StartMinimized',1) = 1 then
-    begin
-      popupSettingsStartMinimized.Checked := True;
-      timerSlowHide.Enabled := True;
-    end
-    else popupSettingsStartMinimized.Checked := False;
+    startMinimized := ini.getBool('Settings','StartMinimized',True);
+    popupSettingsStartMinimized.Checked := startMinimized;
+    timerSlowShow.Enabled := not startMinimized;
+
+    if startMinimized then
+      popupTrayIconShowHide.Caption := 'Show'
+    else
+      popupTrayIconShowHide.Caption := 'Hide';
+
     // ZoomFactor
     zoomFactor := ini.getInteger('Settings','ZoomFactor',4);
     if zoomFactor > 5 then zoomFactor := 5 else if zoomFactor < 1 then zoomFactor := 1;
@@ -123,7 +126,7 @@ begin
   end
   else
   begin
-    setInteger('Settings','StartMinimized',startMinimized);
+    setBool('Settings','StartMinimized',startMinimized);
     setInteger('Settings','ZoomFactor',zoomFactor);
   end;
 end;
@@ -132,7 +135,6 @@ procedure TMainForm.FormActivate(Sender: TObject);
 begin
   // clear tab from taskbar
   ShowWindow(GetWindow(Handle,GW_OWNER),SW_HIDE);
-  loadSettings;
 end;
 
 procedure TMainForm.timerColorTimer(Sender: TObject);
@@ -220,6 +222,7 @@ begin
     Rectangle(4,12,22,13);
     Pen.Color := clWhite;
   end;
+  loadSettings;
 end;
 
 procedure TMainForm.btnCloseClick(Sender: TObject);
@@ -276,8 +279,8 @@ begin
     imgColor.Canvas.Brush.Color := RGB(r,g,b);
     imgColor.Canvas.Pen.Color := RGB(r,g,b);
     imgColor.Canvas.Rectangle(0,0,imgColor.Width,imgColor.Height);
-    editHex.Text := toHTMLHex(IntToHex(RGB(r,g,b),6));
 
+    editHex.Text := toHTMLHex(IntToHex(RGB(r,g,b),6));
     editHex.OnChange := setColors;
   end
   else
@@ -309,10 +312,8 @@ end;
 
 procedure TMainForm.popupSettingsStartMinimizedClick(Sender: TObject);
 begin
-  if popupSettingsStartMinimized.Checked then
-    ini.setInteger('Settings','StartMinimized',1)
-  else
-    ini.setInteger('Settings','StartMinimized',0);
+  startMinimized := popupSettingsStartMinimized.Checked;
+  ini.setBool('Settings','StartMinimized',startMinimized);
 end;
 
 procedure TMainForm.btnCopyClick(Sender: TObject);
@@ -332,40 +333,51 @@ end;
 
 procedure TMainForm.timerSlowHideTimer(Sender: TObject);
 begin
+  AlphaBlendValue := 255;
   AlphaBlend := True;
   timerSlowHide.Enabled := False;
-  while AlphaBlendValue > 5 do
+  while AlphaBlendValue > 10 do
   begin
-    AlphaBlendValue := AlphaBlendValue - 5;
+    AlphaBlendValue := AlphaBlendValue - 10;
     delay(1);
   end;
+  AlphaBlendValue := 0;
   Hide;
-  AlphaBlendValue := 255;
   AlphaBlend := False;
 end;
 
 procedure TMainForm.timerSlowShowTimer(Sender: TObject);
 begin
-  AlphaBlend := True;
   AlphaBlendValue := 0;
+  AlphaBlend := True;
   Show;
   timerSlowShow.Enabled := False;
-  while AlphaBlendValue < 255 do
+  while AlphaBlendValue < 255 - 10 do
   begin
-    AlphaBlendValue := AlphaBlendValue + 5;
+    AlphaBlendValue := AlphaBlendValue + 10;
     delay(1);
   end;
+  AlphaBlendValue := 255;
   AlphaBlend := False;
 end;
 
 procedure TMainForm.popupTrayIconShowHideClick(Sender: TObject);
 begin
-  if Visible then timerSlowHide.Enabled := True else timerSlowShow.Enabled := True;
+  if Visible then
+  begin
+    popupTrayIconShowHide.Caption := 'Show';
+    timerSlowHide.Enabled := True
+  end
+  else
+  begin
+    popupTrayIconShowHide.Caption := 'Hide';
+    timerSlowShow.Enabled := True;
+  end;
 end;
 
 procedure TMainForm.setZoomFactor(Sender: TObject);
 begin
-  zoomFactor := (Sender as TMenuItem).MenuIndex+1; // StrToInt(LeftStr((Sender as TMenuItem)..Items.Hint,1));
+  zoomFactor := (Sender as TMenuItem).MenuIndex+1;
   setInteger('Settings','ZoomFactor',zoomFactor);
 end;
 
@@ -395,12 +407,22 @@ end;
 
 procedure TMainForm.popupSettingsInfoClick(Sender: TObject);
 begin
-  Frm_Info.ShowModal;
+  Application.CreateForm(TFrm_Info, Frm_Info);
+  try
+    Frm_Info.ShowModal;
+  finally
+    Frm_Info.Release;
+  end;
+end;
+
+procedure Init;
+begin
+  zoomFactor := 4;
+  startMinimized := True;
 end;
 
 initialization
-  zoomFactor := 4;
-  startMinimized := 1;
+  Init;
 // Check if ColorMan.exe is already running
   mHandle := CreateMutex(nil,True,'ColorMan');
   if GetLastError = ERROR_ALREADY_EXISTS then halt; // Already running

@@ -16,7 +16,7 @@ iniFileName = 'ColorMan.ini';
 
 var
   zoomFactor:Integer;
-  startMinimized:Integer;
+  startMinimized:Boolean;
 
 implementation
 
