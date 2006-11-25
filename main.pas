@@ -5,20 +5,20 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, ComCtrls, dxCore, dxButtons, Buttons, Clipbrd,
-  ImgList, Menus, Spin, ShellApi, CoolTrayIcon, TextTrayIcon, jpeg;
+  ImgList, Menus, Spin, ShellApi, CoolTrayIcon, TextTrayIcon, jpeg,
+  JvExControls, JvComponent, JvArrowButton;
 
 const
+  validChars: array[0..16] of Char = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', #8);
   IC_CLICK = WM_APP + 201;
 
 type
   TMainForm = class(TForm)
-    timerColor: TTimer;
     editHex: TEdit;
-    timerZoom: TTimer;
+    timerColor: TTimer;
     imgZoom: TImage;
     pnlForm: TPanel;
     imgList: TImageList;
-    imgColor: TImage;
     pnlColor: TPanel;
     editRed: TSpinEdit;
     editGreen: TSpinEdit;
@@ -28,15 +28,12 @@ type
     popupCopy: TPopupMenu;
     popupCopyHex: TMenuItem;
     popupCopyRGB: TMenuItem;
-    btnCopy: TSpeedButton;
     btnSettings: TSpeedButton;
     popupSettings: TPopupMenu;
     popupSettingsStartMinimized: TMenuItem;
     trayIcon: TTextTrayIcon;
     popupTrayIcon: TPopupMenu;
     popupTrayIconExit: TMenuItem;
-    timerSlowHide: TTimer;
-    timerSlowShow: TTimer;
     popupTrayIconShowHide: TMenuItem;
     popupSettingsZoomFactor: TMenuItem;
     popupSettingsZoomFactor1: TMenuItem;
@@ -48,6 +45,8 @@ type
     imgTopBar: TImage;
     imgBG: TImage;
     pnlZoom: TPanel;
+    tmrFade: TTimer;
+    btnCopy: TJvArrowButton;
     procedure timerColorTimer(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure btnCloseClick(Sender: TObject);
@@ -60,22 +59,25 @@ type
     procedure setColors(Sender: TObject);
     procedure btnMinimizeClick(Sender: TObject);
     procedure popupSettingsStartMinimizedClick(Sender: TObject);
-    procedure btnCopyClick(Sender: TObject);
     procedure btnSettingsClick(Sender: TObject);
     procedure FormActivate(Sender: TObject);
     procedure popupTrayIconExitClick(Sender: TObject);
-    procedure timerSlowHideTimer(Sender: TObject);
-    procedure timerSlowShowTimer(Sender: TObject);
     procedure popupTrayIconShowHideClick(Sender: TObject);
     procedure setZoomFactor(Sender: TObject);
     procedure imgTopBarMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
     procedure trayIconClick(Sender: TObject);
-    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure popupSettingsInfoClick(Sender: TObject);
+    procedure tmrFadeTimer(Sender: TObject);
+    procedure trayIconStartup(Sender: TObject; var ShowMainForm: Boolean);
+    procedure FormShow(Sender: TObject);
+    procedure FormHide(Sender: TObject);
+    procedure btnCopyClick(Sender: TObject);
+    procedure editHexKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
     procedure loadSettings;
+    procedure FadeForm(Action:String);
   public
     { Public declarations }
   end;
@@ -84,12 +86,15 @@ var
   MainForm: TMainForm;
   filePath: String;
   mHandle:THandle;
+  FadeAction:String;
+  FadeSpeed:Integer;
 
 implementation
-
 uses Math, StrUtils, ini, globalDefinitions, functions, info;
 
+
 {$R *.dfm}
+
 
 procedure delay(msecs:Cardinal);
 var
@@ -108,21 +113,19 @@ begin
   if FileExists(filePath + iniFileName) then
   begin
     // StartMinimized
-    startMinimized := ini.getBool('Settings','StartMinimized',True);
+    startMinimized := ini.getBool('Settings','StartMinimized',startMinimized);
     popupSettingsStartMinimized.Checked := startMinimized;
-    timerSlowShow.Enabled := not startMinimized;
 
-    if startMinimized then
-      popupTrayIconShowHide.Caption := 'Show'
+    if not StartMinimized then
+      FadeForm('show')
     else
-      popupTrayIconShowHide.Caption := 'Hide';
+      AlphaBlendValue := 0;
 
     // ZoomFactor
     zoomFactor := ini.getInteger('Settings','ZoomFactor',4);
     if zoomFactor > 5 then zoomFactor := 5 else if zoomFactor < 1 then zoomFactor := 1;
-
-    popupSettingsZoomFactor.Items[zoomFactor-1].Checked := True;
     setInteger('Settings','ZoomFactor',zoomFactor);
+    (FindComponent('popupSettingsZoomFactor'+IntToStr(zoomFactor)) as TMenuItem).Checked := True;
   end
   else
   begin
@@ -131,10 +134,25 @@ begin
   end;
 end;
 
+procedure TMainForm.FadeForm(Action:String);
+begin
+  FadeAction := LowerCase(Action);
+  if FadeAction = 'auto' then
+    if Visible then FadeAction := 'hide' else FadeAction := 'show';
+
+  if FadeAction = 'show' then
+    AlphaBlendValue := 0
+  else
+  if FadeAction = 'hide' then
+    AlphaBlendValue := 255;
+  tmrFade.Enabled := True;
+end;
+
 procedure TMainForm.FormActivate(Sender: TObject);
 begin
   // clear tab from taskbar
-  ShowWindow(GetWindow(Handle,GW_OWNER),SW_HIDE);
+  SetWindowLong(Application.Handle,GWL_EXSTYLE,WS_EX_TOOLWINDOW);
+  loadSettings;
 end;
 
 procedure TMainForm.timerColorTimer(Sender: TObject);
@@ -143,7 +161,6 @@ var
   hdcDesktop : HDC;
   crefPixel : COLORREF;
   p : TPoint;
-
   iWidth,iHeight:Integer;
   C:TCanvas;
   iTmpX,iTmpY:Real;
@@ -158,14 +175,7 @@ begin
     crefPixel := GetPixel(hdcDesktop, p.x, p.y);
     ReleaseDC(hDesk, hdcDesktop);
 
-    imgColor.Canvas.Brush.Color := crefPixel;
-    imgColor.Canvas.Pen.Color := crefPixel;
-    imgColor.Canvas.Rectangle(0,0,imgColor.Width,imgColor.Height);
-
-//    editRed.Text   := IntToStr(crefPixel and $FF);
-//    editGreen.Text := IntToStr(crefPixel and $FF00 div $100);
-//    editBlue.Text  := IntToStr(crefPixel and $FF0000 div $10000);
-    editHex.Text   := toHTMLHex(IntToHex(crefPixel,6));
+    editHex.Text := toHTMLHex(IntToHex(crefPixel,6));
 
     Ex1 := Rect(MainForm.Left + pnlColor.Left,
                 MainForm.Top + pnlColor.Top,
@@ -213,37 +223,24 @@ begin
     Rectangle(4,12,22,13);
     Pen.Color := clWhite;
   end;
-  with imgColor.Canvas do
-  begin
-//    Rectangle(0,0,imgColor.Width,imgColor.Height);
-    Ellipse(5,5,20,20);
-    Ellipse(8,8,17,17);
-    Rectangle(12,4,13,22);
-    Rectangle(4,12,22,13);
-    Pen.Color := clWhite;
-  end;
-  loadSettings;
 end;
 
 procedure TMainForm.btnCloseClick(Sender: TObject);
 begin
-  if Visible then
-  begin
-    timerSlowHide.Enabled := True;
-    while Visible do delay(1);
-  end;
-  Close;
+  FadeForm('close');
 end;
 
 procedure TMainForm.imgColorMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
+  Screen.Cursor := crCross;
   if Button = mbLeft then timerColor.Enabled := True;
 end;
 
 procedure TMainForm.imgColorMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
+  Screen.Cursor := crDefault;
   if Button = mbLeft then timerColor.Enabled := False;
 end;
 
@@ -267,7 +264,7 @@ procedure TMainForm.setColors(Sender: TObject);
 var
   r,g,b:Integer;
   color:TColor;
-  i:integer;
+  i:Integer;
 begin
   if Sender is TSpinEdit then
   begin
@@ -276,9 +273,7 @@ begin
     TryStrToInt(editRed.Text,r);
     TryStrToInt(editGreen.Text,g);
     TryStrToInt(editBlue.Text,b);
-    imgColor.Canvas.Brush.Color := RGB(r,g,b);
-    imgColor.Canvas.Pen.Color := RGB(r,g,b);
-    imgColor.Canvas.Rectangle(0,0,imgColor.Width,imgColor.Height);
+    pnlColor.Color := RGB(r,g,b);
 
     editHex.Text := toHTMLHex(IntToHex(RGB(r,g,b),6));
     editHex.OnChange := setColors;
@@ -292,12 +287,10 @@ begin
 
     TryStrToInt('$' + toHTMLHex(editHex.Text),i);
     color := StringToColor(IntToStr(i));
-    imgColor.Canvas.Brush.Color := color;
-    imgColor.Canvas.Pen.Color := color;
+    pnlColor.Color := color;
     editRed.Text   := IntToStr(color and $FF);
     editGreen.Text := IntToStr(color and $FF00 div $100);
     editBlue.Text  := IntToStr(color and $FF0000 div $10000);
-    imgColor.Canvas.Rectangle(0,0,imgColor.Width,imgColor.Height);
 
     editRed.OnChange := setColors;
     editGreen.OnChange := setColors;
@@ -307,18 +300,13 @@ end;
 
 procedure TMainForm.btnMinimizeClick(Sender: TObject);
 begin
-  timerSlowHide.Enabled := True;
+  FadeForm('hide');
 end;
 
 procedure TMainForm.popupSettingsStartMinimizedClick(Sender: TObject);
 begin
   startMinimized := popupSettingsStartMinimized.Checked;
   ini.setBool('Settings','StartMinimized',startMinimized);
-end;
-
-procedure TMainForm.btnCopyClick(Sender: TObject);
-begin
-  popupCopy.Popup(Mouse.CursorPos.X,Mouse.CursorPos.Y);
 end;
 
 procedure TMainForm.btnSettingsClick(Sender: TObject);
@@ -328,57 +316,18 @@ end;
 
 procedure TMainForm.popupTrayIconExitClick(Sender: TObject);
 begin
-  Close;
-end;
-
-procedure TMainForm.timerSlowHideTimer(Sender: TObject);
-begin
-  AlphaBlendValue := 255;
-  AlphaBlend := True;
-  timerSlowHide.Enabled := False;
-  while AlphaBlendValue > 10 do
-  begin
-    AlphaBlendValue := AlphaBlendValue - 10;
-    delay(1);
-  end;
-  AlphaBlendValue := 0;
-  Hide;
-  AlphaBlend := False;
-end;
-
-procedure TMainForm.timerSlowShowTimer(Sender: TObject);
-begin
-  AlphaBlendValue := 0;
-  AlphaBlend := True;
-  Show;
-  timerSlowShow.Enabled := False;
-  while AlphaBlendValue < 255 - 10 do
-  begin
-    AlphaBlendValue := AlphaBlendValue + 10;
-    delay(1);
-  end;
-  AlphaBlendValue := 255;
-  AlphaBlend := False;
+  FadeForm('close');
 end;
 
 procedure TMainForm.popupTrayIconShowHideClick(Sender: TObject);
 begin
-  if Visible then
-  begin
-    popupTrayIconShowHide.Caption := 'Show';
-    timerSlowHide.Enabled := True
-  end
-  else
-  begin
-    popupTrayIconShowHide.Caption := 'Hide';
-    timerSlowShow.Enabled := True;
-  end;
+  FadeForm('auto');
 end;
 
 procedure TMainForm.setZoomFactor(Sender: TObject);
 begin
-  zoomFactor := (Sender as TMenuItem).MenuIndex+1;
-  setInteger('Settings','ZoomFactor',zoomFactor);
+  zoomFactor := (Sender as TMenuItem).Tag;
+  ini.setInteger('Settings','ZoomFactor',zoomFactor);
 end;
 
 procedure TMainForm.imgTopBarMouseMove(Sender: TObject; Shift: TShiftState;
@@ -393,16 +342,7 @@ end;
 
 procedure TMainForm.trayIconClick(Sender: TObject);
 begin
-  if Visible then timerSlowHide.Enabled := True else timerSlowShow.Enabled := True;
-end;
-
-procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-begin
-  if Visible then
-  begin
-    timerSlowHide.Enabled := True;
-    while Visible do delay(1);
-  end;
+  FadeForm('auto');
 end;
 
 procedure TMainForm.popupSettingsInfoClick(Sender: TObject);
@@ -419,6 +359,87 @@ procedure Init;
 begin
   zoomFactor := 4;
   startMinimized := True;
+  FadeSpeed := 10;
+end;
+
+procedure TMainForm.tmrFadeTimer(Sender: TObject);
+begin
+  AlphaBlend := True;
+  if FadeAction = 'show' then
+  begin
+    if not Visible then Show;
+    if AlphaBlendValue <= 255 - FadeSpeed then
+      AlphaBlendValue := AlphaBlendValue + FadeSpeed
+    else
+    begin
+      AlphaBlend := False;
+      tmrFade.Enabled := False;
+    end;
+  end
+  else
+  if FadeAction = 'hide' then
+  begin
+    if AlphaBlendValue >= FadeSpeed then
+      AlphaBlendValue := AlphaBlendValue - FadeSpeed
+    else
+    begin
+      Hide;
+      AlphaBlend := False;
+      tmrFade.Enabled := False;
+    end;
+  end
+  else
+  if FadeAction = 'close' then
+  begin
+    if AlphaBlendValue >= FadeSpeed then
+      AlphaBlendValue := AlphaBlendValue - FadeSpeed
+    else
+    begin
+      Close;
+    end;
+  end;
+end;
+
+procedure TMainForm.trayIconStartup(Sender: TObject;
+  var ShowMainForm: Boolean);
+begin
+  ShowMainForm := False;
+  MainForm.FormActivate(MainForm);
+end;
+
+procedure TMainForm.FormShow(Sender: TObject);
+begin
+  popupTrayIconShowHide.Caption := 'Hide';
+end;
+
+procedure TMainForm.FormHide(Sender: TObject);
+begin
+  popupTrayIconShowHide.Caption := 'Show';
+end;
+
+procedure TMainForm.btnCopyClick(Sender: TObject);
+begin
+  if editHex.Text <> '' then
+    Clipboard.AsText := editHex.Text
+  else
+    Clipboard.Clear;
+end;
+
+procedure TMainForm.editHexKeyPress(Sender: TObject; var Key: Char);
+var
+  i:integer;
+  origKey:Char;
+begin
+  origKey := UpCase(Key);
+  for i := Low(validChars) to High(validChars) do
+  begin
+    if origKey = validChars[i] then
+    begin
+      Key := origKey;
+      break;
+    end
+    else Key := #0;
+  end;
 end;
 
 initialization

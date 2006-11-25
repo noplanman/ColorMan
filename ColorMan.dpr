@@ -1,5 +1,9 @@
 program ColorMan;
 
+
+
+
+
 uses
   Forms,
   main in 'main.pas' {MainForm},

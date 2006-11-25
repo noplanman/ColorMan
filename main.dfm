@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 769
-  Top = 595
+  Left = 631
+  Top = 438
   BorderIcons = []
   BorderStyle = bsNone
   Caption = 'ColorMan'
@@ -16,8 +16,9 @@ object MainForm: TMainForm
   OldCreateOrder = False
   ScreenSnap = True
   OnActivate = FormActivate
-  OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
+  OnHide = FormHide
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object pnlForm: TPanel
@@ -156,46 +157,8 @@ object MainForm: TMainForm
       Spacing = 0
       OnClick = btnCloseClick
     end
-    object btnCopy: TSpeedButton
-      Left = 156
-      Top = 82
-      Width = 18
-      Height = 18
-      Hint = 'Copy'
-      Flat = True
-      Glyph.Data = {
-        36030000424D3603000000000000360000002800000010000000100000000100
-        1800000000000003000000000000000000000000000000000000CED9E0CED9E0
-        CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9
-        E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CE
-        D9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0
-        CED9E0CED9E0CED9E0FF9F15FF9F15FF9F15FF9F15FF9F15FF9F15FF9F15FF9F
-        15FF9F15CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0FFBF6BFEDDBBFE
-        DDBBFEDAB5FED7B0FED7B0FED4ABFED2A6FFB85DCED9E0CED9E0CED9E0CED9E0
-        CED9E0CED9E0CED9E0F1BB72F1BC73F1BC73F1BC73F1BC73EEC9A1FED7B0FED4
-        ABFFB85DCED9E0CED9E0CED9E0FF9F15FF9F15FF9F15FF9F15FF9F15FF9F15FF
-        9F15FF9F15FF9F15E1BC91FED7B0FED7B0FFB960CED9E0CED9E0CED9E0FFBF6B
-        FEDDBBFEDDBBFEDAB5FED7B0FED7B0FED4ABFED2A6FFB85DE1BF9BFEDDBBFEDD
-        BBFFBC65CED9E0CED9E0CED9E0FFC06EFEDFC1FEDFC1FEDDBBFEDAB5FEDAB5FE
-        D7B0FED4ABFFB85DE1C29FFEDFC1FEDDBBFFBE68CED9E0CED9E0CED9E0FFC06E
-        FEE2C7FEDFC1FEDDBBFEDDBBFEDAB5FED7B0FED7B0FFB960E1C4A4FEE2C7FEDF
-        C1FFBF6BCED9E0CED9E0CED9E0FFC373FEE8D2FEE5CDFEE2C7FEE2C7FEDFC1FE
-        DDBBFEDDBBFFBC65E1C9ACFAB860F5BD83F6B677CED9E0CED9E0CED9E0FFC576
-        FEEBD8FEE8D2FEE5CDFEE2C7FEE2C7FEDFC1FEDDBBFFBE68E6CDB2FABA63FDE7
-        D2FFC576CED9E0CED9E0CED9E0FFC679FEEBD8FEEBD8FEE8D2FEE5CDFEE5CDFE
-        E2C7FEDFC1FFBF6BE8B26AFFC679FFC678CED9E0CED9E0CED9E0CED9E0FFC97F
-        FFF1E4FFF1E4FFEEDEFEEBD8FEEBD8FAB860F5BD83F6B677CED9E0CED9E0CED9
-        E0CED9E0CED9E0CED9E0CED9E0FFC97FFFF4EAFFF1E4FFEEDEFFEEDEFEEBD8FA
-        BA63FDE7D2FFC576CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0FFC575
-        FFCB82FFC97FFFC87CFFC87CFFC679FFC679FFC679CED9E0CED9E0CED9E0CED9
-        E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CE
-        D9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0}
-      ParentShowHint = False
-      ShowHint = True
-      OnClick = btnCopyClick
-    end
     object btnSettings: TSpeedButton
-      Left = 177
+      Left = 179
       Top = 82
       Width = 18
       Height = 18
@@ -232,6 +195,52 @@ object MainForm: TMainForm
       ShowHint = True
       OnClick = btnSettingsClick
     end
+    object btnCopy: TJvArrowButton
+      Left = 154
+      Top = 82
+      Width = 24
+      Height = 18
+      Hint = 'Copy'
+      ArrowWidth = 6
+      DropDown = popupCopy
+      Flat = True
+      FillFont.Charset = DEFAULT_CHARSET
+      FillFont.Color = clWindowText
+      FillFont.Height = -11
+      FillFont.Name = 'MS Sans Serif'
+      FillFont.Style = []
+      Glyph.Data = {
+        36030000424D3603000000000000360000002800000010000000100000000100
+        1800000000000003000000000000000000000000000000000000CED9E0CED9E0
+        CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9
+        E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CE
+        D9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0
+        CED9E0CED9E0CED9E0FF9F15FF9F15FF9F15FF9F15FF9F15FF9F15FF9F15FF9F
+        15FF9F15CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0FFBF6BFEDDBBFE
+        DDBBFEDAB5FED7B0FED7B0FED4ABFED2A6FFB85DCED9E0CED9E0CED9E0CED9E0
+        CED9E0CED9E0CED9E0F1BB72F1BC73F1BC73F1BC73F1BC73EEC9A1FED7B0FED4
+        ABFFB85DCED9E0CED9E0CED9E0FF9F15FF9F15FF9F15FF9F15FF9F15FF9F15FF
+        9F15FF9F15FF9F15E1BC91FED7B0FED7B0FFB960CED9E0CED9E0CED9E0FFBF6B
+        FEDDBBFEDDBBFEDAB5FED7B0FED7B0FED4ABFED2A6FFB85DE1BF9BFEDDBBFEDD
+        BBFFBC65CED9E0CED9E0CED9E0FFC06EFEDFC1FEDFC1FEDDBBFEDAB5FEDAB5FE
+        D7B0FED4ABFFB85DE1C29FFEDFC1FEDDBBFFBE68CED9E0CED9E0CED9E0FFC06E
+        FEE2C7FEDFC1FEDDBBFEDDBBFEDAB5FED7B0FED7B0FFB960E1C4A4FEE2C7FEDF
+        C1FFBF6BCED9E0CED9E0CED9E0FFC373FEE8D2FEE5CDFEE2C7FEE2C7FEDFC1FE
+        DDBBFEDDBBFFBC65E1C9ACFAB860F5BD83F6B677CED9E0CED9E0CED9E0FFC576
+        FEEBD8FEE8D2FEE5CDFEE2C7FEE2C7FEDFC1FEDDBBFFBE68E6CDB2FABA63FDE7
+        D2FFC576CED9E0CED9E0CED9E0FFC679FEEBD8FEEBD8FEE8D2FEE5CDFEE5CDFE
+        E2C7FEDFC1FFBF6BE8B26AFFC679FFC678CED9E0CED9E0CED9E0CED9E0FFC97F
+        FFF1E4FFF1E4FFEEDEFEEBD8FEEBD8FAB860F5BD83F6B677CED9E0CED9E0CED9
+        E0CED9E0CED9E0CED9E0CED9E0FFC97FFFF4EAFFF1E4FFEEDEFFEEDEFEEBD8FA
+        BA63FDE7D2FFC576CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0FFC575
+        FFCB82FFC97FFFC87CFFC87CFFC679FFC679FFC679CED9E0CED9E0CED9E0CED9
+        E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CE
+        D9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0CED9E0}
+      ParentShowHint = False
+      PressBoth = False
+      ShowHint = True
+      OnClick = btnCopyClick
+    end
     object editHex: TEdit
       Left = 90
       Top = 81
@@ -254,6 +263,7 @@ object MainForm: TMainForm
       TabOrder = 0
       Text = 'FFFFFF'
       OnChange = setColors
+      OnKeyPress = editHexKeyPress
     end
     object pnlColor: TPanel
       Left = 90
@@ -264,18 +274,6 @@ object MainForm: TMainForm
       BorderStyle = bsSingle
       Color = clWhite
       TabOrder = 1
-      object imgColor: TImage
-        Left = 0
-        Top = 0
-        Width = 57
-        Height = 63
-        Hint = 'Click & Drag'
-        Align = alClient
-        ParentShowHint = False
-        ShowHint = True
-        OnMouseDown = imgColorMouseDown
-        OnMouseUp = imgColorMouseUp
-      end
     end
     object editRed: TSpinEdit
       Left = 152
@@ -367,13 +365,7 @@ object MainForm: TMainForm
     Enabled = False
     Interval = 50
     OnTimer = timerColorTimer
-    Left = 15
-    Top = 10
-  end
-  object timerZoom: TTimer
-    Enabled = False
-    Interval = 50
-    Left = 18
+    Left = 8
     Top = 10
   end
   object imgList: TImageList
@@ -524,6 +516,7 @@ object MainForm: TMainForm
     Top = 66
     object popupCopyHex: TMenuItem
       Caption = 'Hex'
+      Default = True
       Hint = 'Copy HEX Value'
       OnClick = popupCopyHexClick
     end
@@ -546,6 +539,7 @@ object MainForm: TMainForm
       Caption = 'Zoom Factor'
       Hint = 'Zoom Factor'
       object popupSettingsZoomFactor1: TMenuItem
+        Tag = 1
         AutoCheck = True
         Caption = '1x'
         Hint = '1x Zoom'
@@ -553,6 +547,7 @@ object MainForm: TMainForm
         OnClick = setZoomFactor
       end
       object popupSettingsZoomFactor2: TMenuItem
+        Tag = 2
         AutoCheck = True
         Caption = '2x'
         Hint = '2x Zoom'
@@ -560,6 +555,7 @@ object MainForm: TMainForm
         OnClick = setZoomFactor
       end
       object popupSettingsZoomFactor3: TMenuItem
+        Tag = 3
         AutoCheck = True
         Caption = '3x'
         Hint = '3x Zoom'
@@ -567,6 +563,7 @@ object MainForm: TMainForm
         OnClick = setZoomFactor
       end
       object popupSettingsZoomFactor4: TMenuItem
+        Tag = 4
         AutoCheck = True
         Caption = '4x'
         Checked = True
@@ -575,6 +572,7 @@ object MainForm: TMainForm
         OnClick = setZoomFactor
       end
       object popupSettingsZoomFactor5: TMenuItem
+        Tag = 5
         AutoCheck = True
         Caption = '5x'
         Hint = '5x Zoom'
@@ -608,6 +606,7 @@ object MainForm: TMainForm
     PopupMenu = popupTrayIcon
     MinimizeToTray = True
     OnClick = trayIconClick
+    OnStartup = trayIconStartup
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -11
@@ -625,6 +624,7 @@ object MainForm: TMainForm
     Top = 66
     object popupTrayIconShowHide: TMenuItem
       Caption = 'Hide'
+      Default = True
       Hint = 'Show / Hide'
       OnClick = popupTrayIconShowHideClick
     end
@@ -634,18 +634,11 @@ object MainForm: TMainForm
       OnClick = popupTrayIconExitClick
     end
   end
-  object timerSlowHide: TTimer
+  object tmrFade: TTimer
     Enabled = False
-    Interval = 100
-    OnTimer = timerSlowHideTimer
-    Left = 20
-    Top = 10
-  end
-  object timerSlowShow: TTimer
-    Enabled = False
-    Interval = 100
-    OnTimer = timerSlowShowTimer
-    Left = 25
-    Top = 10
+    Interval = 10
+    OnTimer = tmrFadeTimer
+    Left = 12
+    Top = 8
   end
 end
